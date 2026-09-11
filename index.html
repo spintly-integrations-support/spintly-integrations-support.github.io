@@ -1,1 +1,1348 @@
 
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Spintly x Binary Veda - how the IoT9 B2C lock onboarding flow changes to support multiple locks, each with its own passcode.">
+<meta name="robots" content="noindex">
+<style>
+  html { color-scheme: light dark; }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+
+<style>
+@media print {
+  :root,
+  :root[data-theme="dark"],
+  :root:not([data-theme="light"]) {
+    --ink:#1b1c22; --ink-2:#4d5061; --ink-3:#74788a;
+    --bg:#ffffff; --bg-2:#f7f8fc; --bg-3:#eef0f7;
+    --line:#d8dce9; --line-2:#c1c6da;
+    --primary:#3f51b5; --primary-ink:#2f3f9e; --primary-soft:#e8eaf6; --on-primary:#ffffff;
+    --accent:#8a4c05; --accent-line:#b06c0d; --accent-soft:#fdf4e3;
+    --ok:#15803d; --ok-soft:#e9f7ee;
+    --seq-user:#5a6678; --seq-app:#0b7285; --seq-backend:#15803d;
+    --seq-spintly:#be123c; --seq-kafka:#0f766e; --seq-hardware:#4d7c0f;
+  }
+  @page { size: A4; margin: 14mm 12mm; }
+  .topbar { position: static; }
+  .sidenav { display: none; }
+  .shell { display: block; max-width: none; padding: 0 14px; }
+  main { max-width: none; padding-block: 18px 0; }
+  figure svg { min-width: 0; }
+  .figscroll { overflow: visible; }
+  .tw { overflow: visible; }
+  figure, .ep, .adm, .step, .scr, .rules li, pre, table { break-inside: avoid; }
+  h2, h3 { break-after: avoid; }
+  h2 { margin-top: 26px; }
+  a { text-decoration: none; }
+  .footer { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<title>Multi-Lock Onboarding</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* ---------------------------------------------------------------------------
+   Palette follows the Binary Veda documentation site: Material indigo primary,
+   Inter + JetBrains Mono, and the per-participant sequence-diagram colours
+   defined in that site's stylesheets/extra.css, so diagrams here read as
+   continuous with the ones already published there.
+
+   One hue is added: --accent (amber) marks everything that is NEW or CHANGED
+   in this release. It is the only meaning-carrying colour on the page.
+--------------------------------------------------------------------------- */
+:root{
+  --ink:#1b1c22; --ink-2:#4d5061; --ink-3:#74788a;
+  --bg:#ffffff; --bg-2:#f5f6fb; --bg-3:#ebedf6;
+  --line:#dfe2ee; --line-2:#c6cade;
+  --primary:#3f51b5; --primary-ink:#2f3f9e; --primary-soft:#e8eaf6; --on-primary:#ffffff;
+  --accent:#a45a06; --accent-line:#c2740f; --accent-soft:#fdf3e0;
+  --ok:#15803d; --ok-soft:#e7f6ec;
+  --seq-user:#64748b; --seq-app:#0891b2; --seq-backend:#16a34a;
+  --seq-spintly:#e11d48; --seq-kafka:#0f766e; --seq-hardware:#4d7c0f;
+  --radius:6px;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#e5e6ee; --ink-2:#adb1c4; --ink-3:#888da2;
+    --bg:#16171d; --bg-2:#1d1e26; --bg-3:#262832;
+    --line:#2e3040; --line-2:#3d4054;
+    --primary:#9fa8da; --primary-ink:#b6bde6; --primary-soft:#242942; --on-primary:#12131a; --on-primary:#12131a;
+    --accent:#fbbf24; --accent-line:#d99e17; --accent-soft:#332a11;
+    --ok:#4ade80; --ok-soft:#16281c;
+    --seq-user:#94a3b8; --seq-app:#22d3ee; --seq-backend:#4ade80;
+    --seq-spintly:#fb7185; --seq-kafka:#5eead4; --seq-hardware:#a3e635;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e5e6ee; --ink-2:#adb1c4; --ink-3:#888da2;
+  --bg:#16171d; --bg-2:#1d1e26; --bg-3:#262832;
+  --line:#2e3040; --line-2:#3d4054;
+  --primary:#9fa8da; --primary-ink:#b6bde6; --primary-soft:#242942; --on-primary:#12131a;
+  --accent:#fbbf24; --accent-line:#d99e17; --accent-soft:#332a11;
+  --ok:#4ade80; --ok-soft:#16281c;
+  --seq-user:#94a3b8; --seq-app:#22d3ee; --seq-backend:#4ade80;
+  --seq-spintly:#fb7185; --seq-kafka:#5eead4; --seq-hardware:#a3e635;
+}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-size:15px;line-height:1.62;-webkit-font-smoothing:antialiased}
+
+/* ---- header ------------------------------------------------------------ */
+.topbar{position:sticky;top:0;z-index:40;background:var(--primary);
+  color:var(--on-primary);box-shadow:0 1px 3px rgba(0,0,0,.22)}
+.topbar-in{max-width:1320px;margin:0 auto;padding:11px 20px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.mark{font-weight:700;font-size:13px;letter-spacing:.09em;text-transform:uppercase;
+  opacity:.82;white-space:nowrap}
+.topbar h1{margin:0;font-size:16px;font-weight:600;letter-spacing:-.01em}
+.topbar .ver{margin-left:auto;font-family:var(--mono);font-size:12px;opacity:.8}
+
+/* ---- shell ------------------------------------------------------------- */
+.shell{max-width:1400px;margin:0 auto;padding:0 20px;
+  display:grid;grid-template-columns:250px minmax(0,1fr);gap:40px;align-items:start}
+@media (max-width:900px){.shell{grid-template-columns:minmax(0,1fr);gap:0}
+  .sidenav{display:none}}
+
+.sidenav{position:sticky;top:60px;max-height:calc(100vh - 76px);overflow-y:auto;
+  padding-block:28px;font-size:13.5px}
+.sidenav .grp{font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:700;margin:0 0 10px}
+.sidenav ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px;
+  counter-reset:s}
+.sidenav a{display:flex;gap:9px;padding:5px 10px;border-radius:4px;color:var(--ink-2);
+  text-decoration:none;border-left:2px solid transparent}
+.sidenav a:hover{background:var(--bg-2);color:var(--ink)}
+.sidenav a.on{color:var(--primary-ink);background:var(--primary-soft);
+  border-left-color:var(--primary);font-weight:600}
+.sidenav a .n{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);
+  padding-top:1px;font-variant-numeric:tabular-nums}
+.sidenav a.on .n{color:var(--primary-ink)}
+
+
+main{padding-block:34px 72px;min-width:0;max-width:1060px}
+@media (max-width:900px){main{padding-block:26px 56px}}
+
+/* ---- type -------------------------------------------------------------- */
+.lede{font-size:17.5px;line-height:1.58;color:var(--ink-2);margin:0 0 26px;
+  max-width:62ch;text-wrap:pretty}
+h2{font-size:25px;line-height:1.24;font-weight:700;letter-spacing:-.018em;
+  max-width:24ch;margin:52px 0 14px;text-wrap:balance;scroll-margin-top:64px}
+h2 .sn{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--primary);
+  display:block;margin-bottom:5px;letter-spacing:.04em}
+h3{font-size:16.5px;font-weight:650;margin:30px 0 8px;letter-spacing:-.005em;
+  scroll-margin-top:64px}
+h4{font-size:14px;font-weight:650;margin:22px 0 6px;color:var(--ink-2)}
+p{margin:0 0 14px;max-width:66ch;text-wrap:pretty}
+ul,ol{margin:0 0 14px;padding-left:22px;max-width:66ch}
+li{margin-bottom:6px}
+li::marker{color:var(--ink-3)}
+a{color:var(--primary-ink)}
+strong{font-weight:650;color:var(--ink)}
+hr{border:0;border-top:1px solid var(--line);margin:44px 0}
+code{font-family:var(--mono);font-size:.855em;background:var(--bg-3);
+  padding:.13em .38em;border-radius:3px;word-break:break-word}
+pre{max-width:92ch;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 16px;overflow-x:auto;margin:0 0 16px;font-size:12.7px;line-height:1.62}
+pre code{background:none;padding:0;font-size:inherit;word-break:normal}
+.hl{background:var(--accent-soft);color:var(--accent);font-weight:600;
+  padding:.08em .28em;border-radius:3px;box-shadow:inset 0 0 0 1px var(--accent-line)}
+
+/* ---- tables ------------------------------------------------------------ */
+.tw{max-width:92ch;overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);
+  border-radius:var(--radius)}
+table{border-collapse:collapse;width:100%;font-size:13.2px}
+th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);
+  vertical-align:top}
+th{background:var(--bg-2);font-weight:650;font-size:11.5px;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap;font-size:12px}
+
+/* ---- admonitions (Material convention) --------------------------------- */
+.adm{max-width:82ch;border:1px solid var(--line);border-left:4px solid var(--primary);
+  border-radius:var(--radius);background:var(--bg-2);padding:12px 16px;margin:0 0 18px}
+.adm .at{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--primary-ink);margin:0 0 5px;display:flex;align-items:center;gap:7px}
+.adm p:last-child,.adm ul:last-child{margin-bottom:0}
+.adm.warn{border-left-color:var(--accent-line);background:var(--accent-soft)}
+.adm.warn .at{color:var(--accent)}
+.adm.act{border-left-color:var(--seq-backend);background:var(--ok-soft)}
+.adm.act .at{color:var(--ok)}
+.adm svg{width:14px;height:14px;flex:none}
+
+/* ---- figures / diagrams ------------------------------------------------ */
+figure{max-width:1060px;margin:0 0 22px;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--bg);overflow:hidden}
+.figscroll{overflow-x:auto;padding:14px 12px 4px}
+figure svg{display:block;max-width:100%;height:auto;min-width:900px}
+figure.model svg{min-width:560px}
+figcaption{font-size:12.5px;color:var(--ink-3);padding:9px 16px 12px;
+  border-top:1px solid var(--line);background:var(--bg-2);text-wrap:pretty}
+figcaption b{color:var(--ink-2);font-weight:600}
+
+.seq text{font-family:var(--mono);font-size:12.5px;
+  paint-order:stroke;stroke:var(--bg);stroke-width:4.5px;stroke-linejoin:round}
+.seq .lbl{fill:var(--ink-2)}
+.seq .pname{font-family:var(--sans);font-size:12.5px;font-weight:650;stroke-width:0}
+.seq .lifeline{stroke:var(--line-2);stroke-width:1.4;stroke-dasharray:4 5}
+.seq .pbox{fill:var(--bg-2);stroke-width:1.5}
+.seq .msg{stroke:var(--ink-3);stroke-width:1.6;fill:none}
+.seq .msg.ret{stroke-dasharray:5 4}
+.seq .msg.new{stroke:var(--accent-line);stroke-width:2.1}
+.seq .lbl.new{fill:var(--accent);font-weight:600}
+.seq .note{fill:var(--bg-3);stroke:var(--line-2);stroke-width:1}
+.seq .ntext{font-family:var(--sans);font-size:11.5px;fill:var(--ink-3);stroke-width:0}
+#mkb path{fill:var(--ink-3)}
+#mkn path{fill:var(--accent-line)}
+#mdlar path{fill:var(--ink-3)}
+#mdlarh path{fill:var(--accent-line)}
+.svgdefs{position:absolute;width:0;height:0;overflow:hidden}
+.mdl .box{fill:var(--bg-2);stroke-width:1.5}
+.mdl .edge{stroke:var(--ink-3);stroke-width:1.5;fill:none}
+.mdl .edge.hot{stroke:var(--accent-line);stroke-width:2.1}
+.mdl text{font-family:var(--sans);font-size:12.5px}
+.mdl .ttl{font-size:12px;font-weight:700;letter-spacing:.08em;fill:var(--ink-3)}
+.mdl .chip{fill:var(--accent-soft);stroke:var(--accent-line);stroke-width:1}
+.mdl .ctext{font-family:var(--mono);font-size:11.5px;fill:var(--accent);font-weight:600}
+.mdl .cap{font-size:12px;fill:var(--ink-3);font-style:italic}
+.mdl .divider{stroke:var(--line);stroke-width:1;stroke-dasharray:3 4}
+
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--ink-3);
+  padding:0 16px 12px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:20px;height:0;border-top:2.2px solid var(--ink-3);display:inline-block}
+.legend i.new{border-top-color:var(--accent-line)}
+.legend i.ret{border-top-style:dashed}
+
+/* ---- step strip -------------------------------------------------------- */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  gap:9px;margin:0 0 18px}
+.step{border:1px solid var(--line);border-radius:var(--radius);padding:11px 12px;
+  background:var(--bg-2);display:flex;flex-direction:column;gap:5px}
+.step.chg{border-color:var(--accent-line);background:var(--accent-soft)}
+.step .sh{display:flex;align-items:baseline;gap:8px}
+.step .sn{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);font-weight:600}
+.step.chg .sn{color:var(--accent)}
+.step .nm{font-size:13px;font-weight:600;line-height:1.3}
+.step .st{font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+  font-weight:700;color:var(--ink-3)}
+.step.chg .st{color:var(--accent)}
+.step .dt{font-size:12px;color:var(--ink-2);line-height:1.42}
+
+/* ---- phone mockups ----------------------------------------------------- */
+.screens{display:grid;grid-template-columns:repeat(auto-fit,minmax(226px,1fr));
+  gap:20px;margin:0 0 20px}
+.scr{display:flex;flex-direction:column;gap:9px;min-width:0}
+.phone{border:1px solid var(--line-2);border-radius:20px;background:var(--bg-2);
+  padding:7px;box-shadow:0 2px 10px rgba(20,22,40,.08)}
+.pscreen{background:var(--bg);border-radius:14px;overflow:hidden;
+  border:1px solid var(--line);display:flex;flex-direction:column;min-height:352px}
+.pbar{background:var(--primary);color:var(--on-primary);padding:8px 12px;
+  font-size:12.5px;font-weight:650;display:flex;align-items:center;gap:7px}
+.pbar .bk{opacity:.8;font-weight:400}
+.pbody{padding:11px;display:flex;flex-direction:column;gap:8px;flex:1}
+.lockcard{border:1px solid var(--line);border-radius:8px;padding:9px 10px;
+  background:var(--bg-2);display:flex;flex-direction:column;gap:5px}
+.lockcard .lt{display:flex;align-items:center;gap:7px}
+.lockcard .nm{font-size:12.5px;font-weight:650;line-height:1.2}
+.lockcard .ar{font-size:10.5px;color:var(--ink-3);margin-left:auto;white-space:nowrap}
+.pcrow{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;
+  color:var(--ink-2);background:var(--bg-3);border-radius:4px;padding:3px 7px}
+.pcrow .tag{font-family:var(--sans);font-size:9.5px;letter-spacing:.05em;
+  text-transform:uppercase;font-weight:700;color:var(--ink-3);margin-left:auto}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--ok)}
+.dot.warn{background:var(--accent-line)}
+.dot.idle{background:var(--line-2)}
+.pbtn{border:1px dashed var(--line-2);border-radius:8px;padding:9px;text-align:center;
+  font-size:12px;font-weight:600;color:var(--primary-ink);background:transparent}
+.pbtn.solid{background:var(--primary);color:var(--on-primary);border:0;border-radius:8px}
+.synclist{display:flex;flex-direction:column;gap:6px;font-size:11.5px}
+.syncrow{display:flex;align-items:center;gap:7px;color:var(--ink-2)}
+.syncrow .lb{flex:1}
+.syncrow .mk{font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:2px}
+.keypad div{border:1px solid var(--line);border-radius:6px;padding:7px 0;
+  text-align:center;font-family:var(--mono);font-size:13px;color:var(--ink-2);
+  background:var(--bg-2)}
+.pcbig{font-family:var(--mono);font-size:20px;letter-spacing:.28em;text-align:center;
+  padding:9px 0;color:var(--ink);font-weight:600}
+.phint{font-size:10.5px;color:var(--ink-3);line-height:1.42;text-wrap:pretty}
+.scaption{font-size:12.5px;color:var(--ink-2);line-height:1.45;text-wrap:pretty}
+.scaption b{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--primary-ink);font-weight:700;margin-bottom:2px}
+.newpill{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;
+  color:var(--accent);background:var(--accent-soft);border:1px solid var(--accent-line);
+  border-radius:3px;padding:1px 5px;white-space:nowrap}
+
+/* ---- endpoint blocks --------------------------------------------------- */
+.ep{max-width:92ch;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+  margin:0 0 18px}
+.ep-h{display:flex;align-items:center;gap:9px;padding:9px 13px;background:var(--bg-2);
+  border-bottom:1px solid var(--line);flex-wrap:wrap}
+.verb{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.05em;
+  padding:2px 7px;border-radius:3px;background:var(--primary);
+  color:var(--on-primary);flex:none}
+.ep-h .path{font-family:var(--mono);font-size:12px;color:var(--ink);word-break:break-all}
+.ep-b{padding:13px}
+.ep-b>*:last-child{margin-bottom:0}
+.ep-b h4:first-child{margin-top:0}
+
+.rules{counter-reset:r;list-style:none;padding:0;margin:0 0 18px;
+  display:flex;flex-direction:column;gap:9px}
+.rules{max-width:82ch}
+.rules li{counter-increment:r;display:flex;gap:12px;margin:0;
+  border:1px solid var(--line);border-radius:var(--radius);padding:10px 13px;
+  background:var(--bg-2)}
+.rules li::before{content:counter(r);font-family:var(--mono);font-size:12px;
+  font-weight:600;color:var(--primary);flex:none;padding-top:1px}
+
+.footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);
+  font-size:12.5px;color:var(--ink-3)}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:3px}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+</style>
+
+<svg class="svgdefs" aria-hidden="true" focusable="false"><defs>
+  <marker id="mkb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker>
+  <marker id="mkn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker>
+  <marker id="mdlar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker>
+  <marker id="mdlarh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker>
+</defs></svg>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <span class="mark">Spintly &times; Binary Veda</span>
+    <h1>Multi-Lock Onboarding &amp; Multiple Passcodes</h1>
+    <span class="ver">v1.0 &middot; IoT9 B2C</span>
+  </div>
+</header>
+
+<div class="shell">
+
+  <nav class="sidenav" aria-label="Sections">
+    <p class="grp">Change document</p>
+    <ol>
+      <li><a href="#changes" class="on"><span class="n">1</span><span>What changes</span></a></li>
+      <li><a href="#why"><span class="n">2</span><span>Why one lock</span></a></li>
+      <li><a href="#eight"><span class="n">3</span><span>The eight steps</span></a></li>
+      <li><a href="#acks"><span class="n">4</span><span>Kafka acknowledgements</span></a></li>
+      <li><a href="#first"><span class="n">5</span><span>Flow A &mdash; first lock</span></a></li>
+      <li><a href="#second"><span class="n">6</span><span>Flow B &mdash; second lock</span></a></li>
+      <li><a href="#types"><span class="n">7</span><span>Other access types</span></a></li>
+      <li><a href="#screens"><span class="n">8</span><span>Proposed app screens</span></a></li>
+      <li><a href="#api"><span class="n">9</span><span>API reference</span></a></li>
+      <li><a href="#sdk"><span class="n">10</span><span>SDK changes</span></a></li>
+      <li><a href="#store"><span class="n">11</span><span>What to store</span></a></li>
+      <li><a href="#order"><span class="n">12</span><span>Sequencing rules</span></a></li>
+      <li><a href="#open"><span class="n">13</span><span>Binary Veda's calls</span></a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <p class="lede">The IoT9 B2C flow supports one lock per property today. That was never a
+    product decision &mdash; it fell out of how credentials worked on the Spintly side. This
+    document describes what we changed, and the six places your lock onboarding flow changes
+    to let a user add a second lock with its own independent passcode.</p>
+
+    <div class="adm">
+      <p class="at"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.7v.9"/></svg>How to read this</p>
+      <p>This page follows the structure of your existing
+      <a href="https://binaryveda-inc.github.io/BV-Project-Management/IoT9-B2C-documentation/lock-onboarding/">Lock Onboarding</a>
+      reference. Anything drawn or marked in <span class="newpill">amber</span> is new or changed
+      in this release; everything else already works the way it does today.</p>
+    </div>
+
+    <h2 id="changes"><span class="sn">Section 1</span>What changes</h2>
+
+    <p>An accessor used to hold exactly <strong>one</strong> credential, and permissions were
+    granted at the <strong>accessor</strong> level. A passcode is derived from a credential, so
+    one accessor meant one passcode &mdash; and that passcode was valid on every lock the accessor
+    could open. Add a second lock and the user's first passcode opens it too. Since your
+    requirement is a different passcode per lock, we could not allow the second lock.</p>
+
+    <p>Three changes on the Spintly side remove that limit:</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>Area</th><th>Before</th><th>After</th></tr></thead>
+        <tbody>
+          <tr><td>Locks per property</td><td>1</td><td><strong>Many</strong></td></tr>
+          <tr><td>Credentials per accessor</td><td>1</td><td><strong>Many</strong> &mdash; one per passcode</td></tr>
+          <tr><td>Permission granularity</td><td>accessor &rarr; door</td><td><strong>credential &rarr; door</strong></td></tr>
+          <tr><td>Passcode scope</td><td>same passcode on every lock</td><td><strong>one passcode per lock</strong></td></tr>
+          <tr><td>Acks consumed</td><td>organisation only</td><td>organisation, <strong>site</strong>, <strong>network</strong>, <strong>access point</strong></td></tr>
+          <tr><td>Master passcode call</td><td><code>(serial, orgId, accessorId, &hellip;)</code></td><td><code>(serial, <b>credentialId</b>, orgId, accessorId, &hellip;)</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Nothing about OAuth, the Access SDK, provisioning, firmware, fingerprint or RFID
+    enrolment changes.</p>
+
+    <h2 id="why"><span class="sn">Section 2</span>Why one lock, and what replaces it</h2>
+
+    <p>The whole change is the layer between the accessor and the doors. Binary Veda now
+    decides which credential goes on which lock &mdash; and therefore which passcode opens
+    which lock.</p>
+
+    <figure class="model">
+      <div class="figscroll">
+        <svg viewBox="0 0 1000 372" class="mdl" role="img" aria-label="Before: one accessor holds one credential with one passcode, which is permitted on every door. After: one accessor holds three credentials, each with its own passcode, each permitted on only its own door.">
+          <line class="divider" x1="500" y1="30" x2="500" y2="348"/>
+
+          <!-- ============ BEFORE ============ -->
+          <text class="ttl" x="30" y="26">BEFORE &mdash; ONE CREDENTIAL</text>
+
+          <rect class="box" x="175" y="46" width="150" height="36" rx="6" stroke="var(--seq-user)"/>
+          <text x="250" y="69" text-anchor="middle" fill="var(--seq-user)" font-weight="600">Accessor &middot; John</text>
+
+          <line class="edge" x1="250" y1="82" x2="250" y2="126" marker-end="url(#mdlar)"/>
+
+          <rect class="box" x="165" y="128" width="170" height="36" rx="6" stroke="var(--primary)"/>
+          <text x="250" y="151" text-anchor="middle" fill="var(--primary-ink)" font-weight="600">Credential #1</text>
+
+          <rect class="chip" x="196" y="174" width="108" height="24" rx="4"/>
+          <text class="ctext" x="250" y="191" text-anchor="middle">passcode 1234</text>
+
+          <line class="edge" x1="230" y1="198" x2="163" y2="252" marker-end="url(#mdlar)"/>
+          <line class="edge" x1="270" y1="198" x2="337" y2="252" marker-end="url(#mdlar)"/>
+
+          <rect class="box" x="90" y="254" width="130" height="34" rx="6" stroke="var(--seq-hardware)"/>
+          <text x="155" y="276" text-anchor="middle" fill="var(--seq-hardware)" font-weight="600">Front door</text>
+          <rect class="box" x="280" y="254" width="130" height="34" rx="6" stroke="var(--seq-hardware)"/>
+          <text x="345" y="276" text-anchor="middle" fill="var(--seq-hardware)" font-weight="600">Garage</text>
+
+          <text class="cap" x="250" y="322" text-anchor="middle">One passcode. It opens every door the user has.</text>
+
+          <!-- ============ AFTER ============ -->
+          <text class="ttl" x="530" y="26">AFTER &mdash; ONE CREDENTIAL PER LOCK</text>
+
+          <rect class="box" x="675" y="46" width="150" height="36" rx="6" stroke="var(--seq-user)"/>
+          <text x="750" y="69" text-anchor="middle" fill="var(--seq-user)" font-weight="600">Accessor &middot; John</text>
+
+          <line class="edge" x1="722" y1="82" x2="622" y2="126" marker-end="url(#mdlar)"/>
+          <line class="edge" x1="750" y1="82" x2="750" y2="126" marker-end="url(#mdlar)"/>
+          <line class="edge" x1="778" y1="82" x2="878" y2="126" marker-end="url(#mdlar)"/>
+
+          <rect class="box" x="550" y="128" width="120" height="34" rx="6" stroke="var(--primary)"/>
+          <text x="610" y="150" text-anchor="middle" fill="var(--primary-ink)" font-weight="600">Credential #1</text>
+          <rect class="box" x="690" y="128" width="120" height="34" rx="6" stroke="var(--primary)"/>
+          <text x="750" y="150" text-anchor="middle" fill="var(--primary-ink)" font-weight="600">Credential #2</text>
+          <rect class="box" x="830" y="128" width="120" height="34" rx="6" stroke="var(--primary)"/>
+          <text x="890" y="150" text-anchor="middle" fill="var(--primary-ink)" font-weight="600">Credential #3</text>
+
+          <rect class="chip" x="568" y="172" width="84" height="22" rx="4"/>
+          <text class="ctext" x="610" y="188" text-anchor="middle">1234</text>
+          <rect class="chip" x="708" y="172" width="84" height="22" rx="4"/>
+          <text class="ctext" x="750" y="188" text-anchor="middle">5678</text>
+          <rect class="chip" x="848" y="172" width="84" height="22" rx="4"/>
+          <text class="ctext" x="890" y="188" text-anchor="middle">9012</text>
+
+          <line class="edge hot" x1="610" y1="194" x2="610" y2="250" marker-end="url(#mdlarh)"/>
+          <line class="edge hot" x1="750" y1="194" x2="750" y2="250" marker-end="url(#mdlarh)"/>
+          <line class="edge hot" x1="890" y1="194" x2="890" y2="250" marker-end="url(#mdlarh)"/>
+
+          <rect class="box" x="550" y="254" width="120" height="34" rx="6" stroke="var(--seq-hardware)"/>
+          <text x="610" y="276" text-anchor="middle" fill="var(--seq-hardware)" font-weight="600">Front door</text>
+          <rect class="box" x="690" y="254" width="120" height="34" rx="6" stroke="var(--seq-hardware)"/>
+          <text x="750" y="276" text-anchor="middle" fill="var(--seq-hardware)" font-weight="600">Garage</text>
+          <rect class="box" x="830" y="254" width="120" height="34" rx="6" stroke="var(--seq-hardware)"/>
+          <text x="890" y="276" text-anchor="middle" fill="var(--seq-hardware)" font-weight="600">Gate</text>
+
+          <text class="cap" x="750" y="322" text-anchor="middle">Three passcodes. Each opens only its own lock.</text>
+        </svg>
+      </div>
+      <figcaption><b>The credential is now the unit of access, not the accessor.</b> The amber
+      edges are the permissions you set per credential. A credential may still hold more than
+      one door if you want one passcode to open two locks &mdash; that is your choice to make,
+      per credential.</figcaption>
+    </figure>
+
+    <h2 id="eight"><span class="sn">Section 3</span>The eight steps, revisited</h2>
+
+    <p>Your onboarding flow keeps all eight steps in the same order. Three of them change.</p>
+
+    <div class="steps">
+      <div class="step chg">
+        <div class="sh"><span class="sn">1</span><span class="st">Updated</span></div>
+        <div class="nm">Choose a property</div>
+        <div class="dt">Now waits for the <strong>site</strong> and <strong>network</strong> acks too, not just the organisation.</div>
+      </div>
+      <div class="step">
+        <div class="sh"><span class="sn">2</span><span class="st">Unchanged</span></div>
+        <div class="nm">Configuration mode</div>
+        <div class="dt">Button R for 3 seconds. No app involvement.</div>
+      </div>
+      <div class="step">
+        <div class="sh"><span class="sn">3</span><span class="st">Unchanged</span></div>
+        <div class="nm">Scan for the lock</div>
+        <div class="dt">BLE scan and <code>listLockData</code> lookup.</div>
+      </div>
+      <div class="step chg">
+        <div class="sh"><span class="sn">4</span><span class="st">Updated</span></div>
+        <div class="nm">Customise the lock</div>
+        <div class="dt">Waits for the access-point ack, then binds a <strong>credential</strong> to the lock instead of the accessor.</div>
+      </div>
+      <div class="step">
+        <div class="sh"><span class="sn">5</span><span class="st">Unchanged</span></div>
+        <div class="nm">Provisioning</div>
+        <div class="dt">Mesh configuration over BLE.</div>
+      </div>
+      <div class="step">
+        <div class="sh"><span class="sn">6</span><span class="st">Unchanged</span></div>
+        <div class="nm">Firmware</div>
+        <div class="dt">Version compare and update.</div>
+      </div>
+      <div class="step chg">
+        <div class="sh"><span class="sn">7</span><span class="st">Updated</span></div>
+        <div class="nm">Master passcode</div>
+        <div class="dt">SDK call now takes <code>credentialId</code>. Passcode is scoped to this lock.</div>
+      </div>
+      <div class="step">
+        <div class="sh"><span class="sn">8</span><span class="st">Unchanged</span></div>
+        <div class="nm">Fingerprint &amp; RFID</div>
+        <div class="dt">Optional, enrolled as today.</div>
+      </div>
+    </div>
+
+    <h2 id="acks"><span class="sn">Section 4</span>Kafka acknowledgements you must consume</h2>
+
+    <p>Resource creation in Spintly is asynchronous. The REST call returns immediately; the
+    resource is only usable once Spintly has created it across its services and published
+    a <code>resource_alive</code> message.</p>
+
+    <p>Today you consume the acknowledgement for the <strong>organisation</strong> only.
+    Organisation, site and network are all created by that same API call, and you currently
+    proceed without waiting for the site and network acks. That has to change: with more than
+    one lock, a lock is attached to a network, and acting before the network is confirmed will
+    fail intermittently and be very hard to reproduce.</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>Resource</th><th>Created by</th><th>Message</th><th>You must</th></tr></thead>
+        <tbody>
+          <tr><td>Organisation</td><td>first property</td><td><code>resource_alive</code></td><td>mark in sync &mdash; <em>already done</em></td></tr>
+          <tr><td>Site</td><td>same call as organisation</td><td><code>resource_alive</code></td><td><span class="newpill">New</span> mark in sync</td></tr>
+          <tr><td>Network</td><td>same call as organisation</td><td><code>resource_alive</code></td><td><span class="newpill">New</span> mark in sync</td></tr>
+          <tr><td>Access point</td><td>every <code>addLock</code></td><td><code>resource_alive</code></td><td><span class="newpill">New</span> mark in sync</td></tr>
+          <tr><td>Accessor</td><td>accessor added to org</td><td><code>accessor_ready</code></td><td>mark accessor ready</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><code>resource_alive</code> means <em>this resource has been created on Spintly servers
+    and is healthy</em> &mdash; read it as "this id is now safe to use in the next API call."
+    <code>accessor_ready</code> means the accessor exists in that organisation and can receive
+    credentials and permissions.</p>
+
+    <h3>Envelope</h3>
+
+    <pre><code>{
+    "messageVersion": 1,
+    "messageData": {
+        "requestId": "ahds-akjshak-dsbdk-skjdskd",
+        "msgType": "resource_alive",
+        "dataVersion": 1,
+        "data": {
+            "resourceId": 123,
+            "resourceName": "organisations | sites | networks | gateways | access_points"
+        }
+    }
+}</code></pre>
+
+    <p><code>resourceName</code> tells you which resource the id belongs to, and
+    <code>resourceId</code> is that resource's id &mdash; for a lock, <code>resourceName</code>
+    is <code>access_points</code> and <code>resourceId</code> is the
+    <code>accessPointId</code> Spintly assigned. The same envelope carries all five resource
+    types, so one consumer handles them all: switch on <code>resourceName</code> and mark the
+    matching record in sync.</p>
+
+    <h3><code>accessor_ready</code></h3>
+
+    <p>The accessor acknowledgement uses the same envelope with its own <code>data</code>
+    block, carrying both ids you need to act on it:</p>
+
+    <pre><code>{
+    "messageVersion": 1,
+    "messageData": {
+        "requestId": "ahds-akjshak-dsbdk-skjdskd",
+        "msgType": "accessor_ready",
+        "dataVersion": 1,
+        "data": {
+            "accessorId": 123456,
+            "orgId": 123
+        }
+    }
+}</code></pre>
+
+    <div class="adm warn">
+      <p class="at"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2.2 14.5 13.6h-13z" stroke-linejoin="round"/><path d="M8 6.6v3.1M8 11.3v.7"/></svg>Three rules for the consumer</p>
+      <ul>
+        <li><strong>Be idempotent.</strong> The same ack may arrive more than once. Marking a resource in sync twice must be harmless.</li>
+        <li><strong>Ignore unknown <code>msgType</code> values</strong> rather than retrying them, so message types we add later cannot stall your consumer.</li>
+        <li><strong>Never proceed on a timeout.</strong> If an ack does not arrive, surface it and stop &mdash; do not fall through to the next API call. Your existing <code>getLock</code> and <code>resumeOnboarding</code> polling loops are the right place to hold.</li>
+      </ul>
+    </div>
+
+    <h2 id="first"><span class="sn">Section 5</span>Flow A &mdash; adding the first lock</h2>
+
+    <p>This is your current flow with the extra acks, and with the permission granted against
+    a credential rather than the accessor.</p>
+
+    <figure>
+      <div class="figscroll">
+        <svg viewBox="0 0 1200 752" class="seq" role="img" aria-label="Sequence for onboarding the first lock: property creation with organisation, site and network acks; accessor creation returning a credentialId; access point creation with its ack; a credential-level permission grant; and the master passcode written over BLE with the credentialId.">
+          <rect class="pbox" x="25" y="20" width="150" height="38" rx="6" stroke="var(--seq-user)"/>
+          <text class="pname" x="100" y="44" text-anchor="middle" fill="var(--seq-user)">User</text>
+          <rect class="pbox" x="225" y="20" width="150" height="38" rx="6" stroke="var(--seq-app)"/>
+          <text class="pname" x="300" y="44" text-anchor="middle" fill="var(--seq-app)">App</text>
+          <rect class="pbox" x="425" y="20" width="150" height="38" rx="6" stroke="var(--seq-backend)"/>
+          <text class="pname" x="500" y="44" text-anchor="middle" fill="var(--seq-backend)">BV backend</text>
+          <rect class="pbox" x="625" y="20" width="150" height="38" rx="6" stroke="var(--seq-spintly)"/>
+          <text class="pname" x="700" y="44" text-anchor="middle" fill="var(--seq-spintly)">Spintly</text>
+          <rect class="pbox" x="825" y="20" width="150" height="38" rx="6" stroke="var(--seq-kafka)"/>
+          <text class="pname" x="900" y="44" text-anchor="middle" fill="var(--seq-kafka)">Kafka</text>
+          <rect class="pbox" x="1025" y="20" width="150" height="38" rx="6" stroke="var(--seq-hardware)"/>
+          <text class="pname" x="1100" y="44" text-anchor="middle" fill="var(--seq-hardware)">Lock</text>
+
+          <line class="lifeline" x1="100" y1="58" x2="100" y2="716"/>
+          <line class="lifeline" x1="300" y1="58" x2="300" y2="716"/>
+          <line class="lifeline" x1="500" y1="58" x2="500" y2="716"/>
+          <line class="lifeline" x1="700" y1="58" x2="700" y2="716"/>
+          <line class="lifeline" x1="900" y1="58" x2="900" y2="716"/>
+          <line class="lifeline" x1="1100" y1="58" x2="1100" y2="716"/>
+
+          <text class="lbl" x="200" y="104" text-anchor="middle">creates a property</text>
+          <line class="msg" x1="100" y1="112" x2="298" y2="112" marker-end="url(#mkb)"/>
+
+          <text class="lbl" x="400" y="148" text-anchor="middle">createSite(name:)</text>
+          <line class="msg" x1="300" y1="156" x2="498" y2="156" marker-end="url(#mkb)"/>
+
+          <text class="lbl" x="600" y="192" text-anchor="middle">POST /organisations</text>
+          <line class="msg" x1="500" y1="200" x2="698" y2="200" marker-end="url(#mkb)"/>
+          <text class="ntext" x="712" y="216">creates org + site + network</text>
+
+          <text class="lbl" x="700" y="236" text-anchor="middle">resource_alive &middot; organisations</text>
+          <line class="msg" x1="900" y1="244" x2="502" y2="244" marker-end="url(#mkb)"/>
+
+          <text class="lbl new" x="700" y="280" text-anchor="middle">resource_alive &middot; sites</text>
+          <line class="msg new" x1="900" y1="288" x2="502" y2="288" marker-end="url(#mkn)"/>
+
+          <text class="lbl new" x="700" y="324" text-anchor="middle">resource_alive &middot; networks</text>
+          <line class="msg new" x1="900" y1="332" x2="502" y2="332" marker-end="url(#mkn)"/>
+
+          <text class="lbl" x="600" y="368" text-anchor="middle">POST /accessors</text>
+          <line class="msg" x1="500" y1="376" x2="698" y2="376" marker-end="url(#mkb)"/>
+
+          <text class="lbl new" x="600" y="412" text-anchor="middle">200 &middot; credentialId 700000001</text>
+          <line class="msg new ret" x1="700" y1="420" x2="502" y2="420" marker-end="url(#mkn)"/>
+
+          <text class="lbl" x="700" y="456" text-anchor="middle">accessor_ready</text>
+          <line class="msg" x1="900" y1="464" x2="502" y2="464" marker-end="url(#mkb)"/>
+
+          <text class="lbl" x="400" y="500" text-anchor="middle">addLock(serial, name)</text>
+          <line class="msg" x1="300" y1="508" x2="498" y2="508" marker-end="url(#mkb)"/>
+
+          <text class="lbl" x="600" y="544" text-anchor="middle">POST /accessPoints</text>
+          <line class="msg" x1="500" y1="552" x2="698" y2="552" marker-end="url(#mkb)"/>
+
+          <text class="lbl new" x="700" y="588" text-anchor="middle">resource_alive &middot; access_points</text>
+          <line class="msg new" x1="900" y1="596" x2="502" y2="596" marker-end="url(#mkn)"/>
+
+          <text class="lbl new" x="600" y="632" text-anchor="middle">PATCH &hellip;/{credentialId}/permissions</text>
+          <line class="msg new" x1="500" y1="640" x2="698" y2="640" marker-end="url(#mkn)"/>
+
+          <text class="lbl new" x="700" y="676" text-anchor="middle">generateMasterPasscode(serial, credentialId, &hellip;)</text>
+          <line class="msg new" x1="300" y1="684" x2="1098" y2="684" marker-end="url(#mkn)"/>
+          <text class="ntext" x="700" y="702" text-anchor="middle">Config SDK, over BLE</text>
+        </svg>
+      </div>
+      <div class="legend">
+        <span><i class="new"></i> new or changed in this release</span>
+        <span><i></i> unchanged</span>
+        <span><i class="ret"></i> response</span>
+      </div>
+      <figcaption><b>First lock.</b> Three acks are added before the flow may continue, the
+      accessor response is now something you must keep, and the permission is granted against
+      the credential rather than the accessor.</figcaption>
+    </figure>
+
+    <h3>Step 1 &mdash; Organisation, site and network</h3>
+    <p>Create them if the user has no property yet. Wait for <strong>all three</strong>
+    <code>resource_alive</code> messages before continuing. Only then is the property usable
+    and its <code>synced</code> flag true.</p>
+
+    <h3>Step 2 &mdash; Owner accessor</h3>
+    <p>If the owner has no accessor in this organisation, create one:</p>
+    <pre><code>POST /credentialManagementV3/v1/accessors</code></pre>
+    <p>The response carries the credential that was created with the accessor:</p>
+    <pre><code>{
+  "type": "success",
+  "message": {
+    "credentials": [
+      {
+        "integratorUniqueId": "ff766cf7-4182-4327-8898-bf2b947ec658",
+        "accessorId": 107968,
+        "integratorId": 123,
+        "credentialTypes": [
+          { "type": "passcode", <span class="hl">"credentialId": 700000001</span>, "format": "32_bit", "status": 1 }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+
+    <div class="adm act">
+      <p class="at"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 8.4 6.4 12 13 4.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Action for Binary Veda</p>
+      <p><code>credentialTypes</code> holds one entry per access type that was enabled when
+      the accessor was created &mdash; store all of them, not only the passcode one. The
+      <code>passcode</code> credential is the one you bind to this first lock and whose value
+      the user is about to set. If an id is ever lost, the get-credentials API in
+      <a href="#types">section 7</a> reads them back.</p>
+    </div>
+
+    <p>Wait for <code>accessor_ready</code> before granting any permission.</p>
+
+    <h3>Step 3 &mdash; Access point</h3>
+    <p>Create the access point as you do today, then wait for its <code>resource_alive</code>.
+    The permission call in step 4 will fail if the access point is not yet in sync.</p>
+
+    <h3>Step 4 &mdash; Bind the credential to the lock</h3>
+    <p>Instead of the accessor-level call you use today
+    (<code>PATCH &hellip;/accessors/{accessorId}/permissions</code>), use the credential-level
+    call with the <code>credentialId</code> from step 2:</p>
+    <pre><code>PATCH /permissionManagementV3/v1/organisations/{orgId}/accessors/{accessorId}
+      /credentials/{credentialId}/permissions
+
+{ "accessPointsToAdd": [4567], "accessPointsToRemove": [] }</code></pre>
+    <p>This is the call that binds <em>that specific passcode</em> to <em>that specific
+    lock</em>.</p>
+
+    <h3>Step 5 &mdash; Master passcode</h3>
+    <p>Call the Config SDK master-passcode function, now passing the
+    <code>credentialId</code> &mdash; see <a href="#sdk">section 10</a>.</p>
+
+    <h2 id="second"><span class="sn">Section 6</span>Flow B &mdash; adding the second lock</h2>
+
+    <p>This is the new capability. The organisation, site, network and accessor already exist,
+    so the flow is shorter &mdash; but it gains one step that has no equivalent today:
+    <strong>requesting a new credential</strong> for the accessor the user already has.</p>
+
+    <figure>
+      <div class="figscroll">
+        <svg viewBox="0 0 1200 512" class="seq" role="img" aria-label="Sequence for onboarding a second lock: create the access point and wait for its ack, request a new passcode credential for the existing accessor, bind that new credential to the new access point, then write a master passcode with the new credentialId.">
+          <rect class="pbox" x="25" y="20" width="150" height="38" rx="6" stroke="var(--seq-user)"/>
+          <text class="pname" x="100" y="44" text-anchor="middle" fill="var(--seq-user)">User</text>
+          <rect class="pbox" x="225" y="20" width="150" height="38" rx="6" stroke="var(--seq-app)"/>
+          <text class="pname" x="300" y="44" text-anchor="middle" fill="var(--seq-app)">App</text>
+          <rect class="pbox" x="425" y="20" width="150" height="38" rx="6" stroke="var(--seq-backend)"/>
+          <text class="pname" x="500" y="44" text-anchor="middle" fill="var(--seq-backend)">BV backend</text>
+          <rect class="pbox" x="625" y="20" width="150" height="38" rx="6" stroke="var(--seq-spintly)"/>
+          <text class="pname" x="700" y="44" text-anchor="middle" fill="var(--seq-spintly)">Spintly</text>
+          <rect class="pbox" x="825" y="20" width="150" height="38" rx="6" stroke="var(--seq-kafka)"/>
+          <text class="pname" x="900" y="44" text-anchor="middle" fill="var(--seq-kafka)">Kafka</text>
+          <rect class="pbox" x="1025" y="20" width="150" height="38" rx="6" stroke="var(--seq-hardware)"/>
+          <text class="pname" x="1100" y="44" text-anchor="middle" fill="var(--seq-hardware)">Lock 2</text>
+
+          <line class="lifeline" x1="100" y1="58" x2="100" y2="476"/>
+          <line class="lifeline" x1="300" y1="58" x2="300" y2="476"/>
+          <line class="lifeline" x1="500" y1="58" x2="500" y2="476"/>
+          <line class="lifeline" x1="700" y1="58" x2="700" y2="476"/>
+          <line class="lifeline" x1="900" y1="58" x2="900" y2="476"/>
+          <line class="lifeline" x1="1100" y1="58" x2="1100" y2="476"/>
+
+          <text class="lbl new" x="200" y="104" text-anchor="middle">taps Add lock</text>
+          <line class="msg new" x1="100" y1="112" x2="298" y2="112" marker-end="url(#mkn)"/>
+          <text class="ntext" x="316" y="117">no longer blocked</text>
+
+          <text class="lbl" x="400" y="148" text-anchor="middle">addLock(serial, name)</text>
+          <line class="msg" x1="300" y1="156" x2="498" y2="156" marker-end="url(#mkb)"/>
+
+          <text class="lbl" x="600" y="192" text-anchor="middle">POST /accessPoints</text>
+          <line class="msg" x1="500" y1="200" x2="698" y2="200" marker-end="url(#mkb)"/>
+
+          <text class="lbl new" x="700" y="236" text-anchor="middle">resource_alive &middot; access_points</text>
+          <line class="msg new" x1="900" y1="244" x2="502" y2="244" marker-end="url(#mkn)"/>
+
+          <text class="lbl new" x="600" y="280" text-anchor="middle">POST &hellip;/credential/create</text>
+          <line class="msg new" x1="500" y1="288" x2="698" y2="288" marker-end="url(#mkn)"/>
+          <text class="ntext" x="712" y="304">{ "credentialType": "passcode" }</text>
+
+          <text class="lbl new" x="600" y="324" text-anchor="middle">200 &middot; credentialId 700000002</text>
+          <line class="msg new ret" x1="700" y1="332" x2="502" y2="332" marker-end="url(#mkn)"/>
+
+          <text class="lbl new" x="600" y="368" text-anchor="middle">PATCH &hellip;/{credentialId}/permissions</text>
+          <line class="msg new" x1="500" y1="376" x2="698" y2="376" marker-end="url(#mkn)"/>
+
+          <text class="lbl new" x="700" y="412" text-anchor="middle">generateMasterPasscode(serial, 700000002, &hellip;)</text>
+          <line class="msg new" x1="300" y1="420" x2="1098" y2="420" marker-end="url(#mkn)"/>
+          <text class="ntext" x="700" y="438" text-anchor="middle">a passcode independent of lock 1</text>
+        </svg>
+      </div>
+      <div class="legend">
+        <span><i class="new"></i> new or changed in this release</span>
+        <span><i></i> unchanged</span>
+        <span><i class="ret"></i> response</span>
+      </div>
+      <figcaption><b>Second lock.</b> Steps 2, 3, 5, 6 and 8 of your onboarding flow are
+      identical to the first lock. Only the backend work between the access-point ack and the
+      passcode screen is different &mdash; and that is where the new credential is issued.</figcaption>
+    </figure>
+
+    <h3>Step 1 &mdash; Create the access point</h3>
+    <p>Create the lock's access point in the existing organisation and network, then
+    <strong>wait for its <code>resource_alive</code> ack</strong>. Do not request a credential
+    before it arrives.</p>
+
+    <h3>Step 2 &mdash; Request a new passcode credential</h3>
+    <pre><code>POST /permissionManagementV3/v1/organisations/{orgId}/accessors/{accessorId}/credential/create
+
+{ "credentialType": "passcode" }</code></pre>
+    <p>Response:</p>
+    <pre><code>{
+  "type": "success",
+  "message": {
+    "orgId": 1,
+    "accessorId": 501,
+    "credentialType": "passcode",
+    <span class="hl">"credentialId": 700000002</span>
+  }
+}</code></pre>
+
+    <div class="adm act">
+      <p class="at"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 8.4 6.4 12 13 4.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Action for Binary Veda</p>
+      <p>Store this <code>credentialId</code> against the lock being onboarded. It is a
+      <em>different</em> credential from the one issued at accessor creation, and it will carry
+      a <em>different</em> passcode.</p>
+    </div>
+
+    <h3>Step 3 &mdash; Bind the new credential to the new lock</h3>
+    <pre><code>PATCH /permissionManagementV3/v1/organisations/{orgId}/accessors/{accessorId}
+      /credentials/700000002/permissions
+
+{ "accessPointsToAdd": [4568], "accessPointsToRemove": [] }</code></pre>
+    <p>Use the <strong>new</strong> <code>credentialId</code> and the <strong>new</strong>
+    <code>accessPointId</code>. Do not add the new credential to the first lock unless you
+    intend the second passcode to open it too.</p>
+
+    <h3>Step 4 &mdash; Master passcode for the second lock</h3>
+    <p>Call the SDK with the new <code>credentialId</code>. The user sets a passcode that is
+    completely independent of the first lock's.</p>
+
+    <p>Repeat steps 1&ndash;4 for every additional lock.</p>
+
+    <h2 id="types"><span class="sn">Section 7</span>Other access types</h2>
+
+    <p>A passcode is one credential type. The same credential-per-door model applies to
+    fingerprint, card, face, QR and wallet. What differs between them is only <strong>how the
+    credential comes into existence and where you read its id</strong> &mdash; once it exists,
+    every type is bound to a lock with the same call from <a href="#api">section 9</a>.</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>Access type</th><th>Credential created by</th><th>Typical count per user</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Passcode</strong></td><td>Spintly</td><td><strong>one per lock</strong> &mdash; the subject of this document</td></tr>
+          <tr><td><strong>Fingerprint</strong></td><td>Spintly</td><td>usually one, bound to every lock</td></tr>
+          <tr><td><strong>Card</strong> (RFID)</td><td><strong>Binary Veda</strong> &mdash; Spintly cannot generate one</td><td>one per physical card</td></tr>
+          <tr><td>Face, QR, Wallet</td><td>Spintly</td><td>not in the current scope</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Where a credential comes from</h3>
+
+    <p>There are three moments at which a credential is issued, and they are the only three.</p>
+
+    <ol class="rules">
+      <li><strong>When the accessor is created.</strong> Access settings are created together
+      with the accessor, and a credential is issued for <em>every access type enabled at that
+      moment</em>. These come back in the create-accessor response, in the
+      <code>credentialTypes</code> array &mdash; one entry per type. This is the one place
+      credentials are handed to you unasked, so capture all of them, not only the passcode one.</li>
+      <li><strong>The first time an access type is enabled afterwards.</strong> Enabling a type
+      through the access-settings routes creates its credential on our side. The response does
+      <strong>not</strong> carry it &mdash; read it with the get-credentials API below.
+      Disabling and re-enabling the same type later does <strong>not</strong> issue a new
+      credential; the original one is reused.</li>
+      <li><strong>Whenever you ask for another one.</strong>
+      <code>POST &hellip;/credential/create</code> issues an additional credential, and it
+      works for every access type, not just passcode. This is how a user gets a second passcode
+      &mdash; and how you would give them a second credential of any other type if you ever
+      needed one.</li>
+    </ol>
+
+    <h3>Reading a user's current credentials</h3>
+
+    <p>Because enabling an access type does not return the credential it created, you need a
+    way to read what a user holds. This route is the read side of everything above &mdash; the
+    source of truth, and the recovery path if a <code>credentialId</code> is ever lost on your
+    side.</p>
+
+    <div class="ep">
+      <div class="ep-h"><span class="verb">GET</span><span class="path">/credentialManagementV3/v1/organisations/{orgId}/accessors/{accessorId}/credential</span></div>
+      <div class="ep-b">
+        <div class="tw"><table>
+          <thead><tr><th>Parameter</th><th>In</th><th></th></tr></thead>
+          <tbody>
+            <tr><td><code>orgId</code></td><td>path</td><td>organisation the accessor belongs to</td></tr>
+            <tr><td><code>accessorId</code></td><td>path</td><td>accessor whose credentials are read</td></tr>
+            <tr><td><code>credentialType</code></td><td>query</td><td>optional filter, e.g. <code>passcode</code>. Omit for all.</td></tr>
+          </tbody>
+        </table></div>
+        <h4>Response 200</h4>
+        <pre><code>{
+  "type": "success",
+  "message": {
+    "orgId": 123,
+    "accessorId": 107968,
+    "credentials": [
+      { "type": "passcode",    "credentialId": 700000001, "format": "32_bit", "status": 1 },
+      { "type": "passcode",    "credentialId": 700000002, "format": "32_bit", "status": 1 },
+      { "type": "fingerprint", "credentialId": 44389500,  "format": "32_bit", "status": 1 },
+      { "type": "card",        "credentialId": 123456,    "format": "32_bit", "status": 1 }
+    ]
+  }
+}</code></pre>
+        <ul>
+          <li>Each entry is the same object the create-accessor response returns inside
+          <code>credentialTypes</code>, so one parser handles both.</li>
+          <li><strong>Do not key on <code>type</code>.</strong> An accessor may hold several
+          credentials of the same type &mdash; the two <code>passcode</code> entries above are
+          a user with a different passcode on each of two locks.
+          <code>credentialId</code> is the unique key.</li>
+          <li>Returns an empty <code>credentials</code> array when the accessor holds none;
+          <code>400</code> when the accessor is not a member of the organisation.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="adm">
+      <p class="at"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.7v.9"/></svg>Enabling a type is not the same as granting access</p>
+      <p>Access settings decide <em>which credential types a user may have</em>. The
+      permissions call decides <em>which locks each credential opens</em>. A user can have
+      fingerprint enabled and still open no doors with it until the fingerprint credential is
+      bound to an access point.</p>
+    </div>
+
+    <h3>Card is supplied by you</h3>
+
+    <p>A card credential is a number already encoded on a physical card, so Spintly cannot
+    generate one &mdash; <strong>you</strong> provide it. Assign it either when creating the
+    accessor, or afterwards:</p>
+
+    <div class="ep">
+      <div class="ep-h"><span class="verb">PATCH</span><span class="path">/credentialManagementV3/v1/organisations/{orgId}/accessors/{accessorId}/credential</span></div>
+      <div class="ep-b">
+        <pre><code>{
+  "credentials": [
+    { "credentialType": "card", "format": "32_bit",
+      "credentialId": 123456, "userCardType": 1 }
+  ]
+}</code></pre>
+        <p>From that point the card behaves like any other credential &mdash; bind it to a lock
+        with the same permissions call.</p>
+      </div>
+    </div>
+
+    <h3>Enabling an access type</h3>
+
+    <p>Two routes turn a type on. Every field is optional; only what you send is changed.</p>
+
+    <div class="ep">
+      <div class="ep-h"><span class="verb">PATCH</span><span class="path">/v1/organisations/{orgId}/accessSettings</span></div>
+      <div class="ep-b">
+        <h4>Organisation level</h4>
+        <p>Enables a type for the whole organisation. A type must be enabled here before any
+        accessor in it can use it.</p>
+        <pre><code>{ "fingerprint": true, "card": true, "passcodeAccess": true, "qr": false }</code></pre>
+      </div>
+    </div>
+
+    <div class="ep">
+      <div class="ep-h"><span class="verb">PATCH</span><span class="path">/v1/organisations/{orgId}/accessor/{accessorId}/accessSettings</span></div>
+      <div class="ep-b">
+        <h4>Accessor level</h4>
+        <p>Enables a type for one user. Note the <strong>singular</strong>
+        <code>accessor</code> segment here &mdash; the permission routes use
+        <code>accessors</code>.</p>
+        <pre><code>{
+  "fingerprintAccess": true,
+  "cardAccess": true,
+  "passcodeAccess": true,
+  "faceAccess": false,
+  "qrAccess": false,
+  "walletAccess": { "enabled": false, "name": "abhinaya" },
+  "dualAuth": false,
+  "adminRole": false
+}</code></pre>
+        <p>Responds <code>{ "type": "success", "message": "success" }</code>. Any credential it
+        created is read back through the get-credentials API, not from this response.</p>
+      </div>
+    </div>
+
+    <h3>In your current scope</h3>
+
+    <p>Godrej uses three types today, and they behave differently enough to be worth stating
+    plainly:</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>Type</th><th>How many</th><th>Bound to</th></tr></thead>
+        <tbody>
+          <tr><td>Passcode</td><td>one credential per lock</td><td>each credential to its own access point</td></tr>
+          <tr><td>Fingerprint</td><td>a single credential</td><td>every access point the user may open</td></tr>
+          <tr><td>Card / RFID</td><td>one per card you issue</td><td>the access points that card should open</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Fingerprint is the useful contrast: because permissions are per credential, one
+    fingerprint credential bound to all of a user's locks gives them the same finger on every
+    door, while their passcodes stay different per door. Nothing forces the two types to be
+    managed the same way.</p>
+
+    <h2 id="screens"><span class="sn">Section 8</span>Proposed app screens</h2>
+
+    <p>The model change surfaces in the app in four places. These are suggestions, not
+    requirements &mdash; but each one exists because something that used to be true of the
+    <em>user</em> is now true of the <em>lock</em>.</p>
+
+    <div class="screens">
+
+      <div class="scr">
+        <div class="phone"><div class="pscreen">
+          <div class="pbar">My home</div>
+          <div class="pbody">
+            <div class="lockcard">
+              <div class="lt"><span class="dot"></span><span class="nm">Front door</span><span class="ar">Main door</span></div>
+              <div class="pcrow">&bull;&bull;&bull;&bull; 1234<span class="tag">BLE</span></div>
+            </div>
+            <div class="lockcard">
+              <div class="lt"><span class="dot"></span><span class="nm">Garage</span><span class="ar">Garage</span></div>
+              <div class="pcrow">&bull;&bull;&bull;&bull; 5678<span class="tag">Gateway</span></div>
+            </div>
+            <div class="lockcard">
+              <div class="lt"><span class="dot idle"></span><span class="nm">Gate</span><span class="ar">Entrance</span></div>
+              <div class="pcrow" style="color:var(--accent)">No passcode set<span class="tag">Set up</span></div>
+            </div>
+            <div class="pbtn">+ Add another lock</div>
+            <div class="phint">Each lock shows its own passcode. Adding a lock is no longer
+            hidden once the first one exists.</div>
+          </div>
+        </div></div>
+        <p class="scaption"><b>Home &mdash; updated</b>The passcode moves onto the lock card.
+        It used to be one value for the whole account, so it had nowhere natural to live.</p>
+      </div>
+
+      <div class="scr">
+        <div class="phone"><div class="pscreen">
+          <div class="pbar"><span class="bk">&#8249;</span> Passcodes</div>
+          <div class="pbody">
+            <div class="lockcard">
+              <div class="lt"><span class="nm" style="font-family:var(--mono)">1234</span><span class="ar">Front door</span></div>
+              <div class="phint">Created 4 Feb &middot; opens 1 lock</div>
+            </div>
+            <div class="lockcard">
+              <div class="lt"><span class="nm" style="font-family:var(--mono)">5678</span><span class="ar">Garage</span></div>
+              <div class="phint">Created 2 Mar &middot; opens 1 lock</div>
+            </div>
+            <div class="lockcard">
+              <div class="lt"><span class="nm" style="font-family:var(--mono)">9012</span><span class="ar">2 locks</span></div>
+              <div class="phint">Front door, Garage &middot; shared passcode</div>
+            </div>
+            <div class="pbtn">+ Create a passcode</div>
+            <div class="phint">Every passcode names the locks it opens, so a user can never
+            be unsure which door a code belongs to.</div>
+          </div>
+        </div></div>
+        <p class="scaption"><b>Passcodes &mdash; new</b>A user with several passcodes needs one
+        place to see them all and which lock each one opens.</p>
+      </div>
+
+      <div class="scr">
+        <div class="phone"><div class="pscreen">
+          <div class="pbar"><span class="bk">&#8249;</span> Adding Garage</div>
+          <div class="pbody">
+            <div class="phint" style="font-size:11.5px;color:var(--ink-2)">Setting up your lock&hellip;</div>
+            <div class="synclist">
+              <div class="syncrow"><span class="dot"></span><span class="lb">Property</span><span class="mk">ready</span></div>
+              <div class="syncrow"><span class="dot"></span><span class="lb">Site</span><span class="mk">ready</span></div>
+              <div class="syncrow"><span class="dot"></span><span class="lb">Network</span><span class="mk">ready</span></div>
+              <div class="syncrow"><span class="dot warn"></span><span class="lb">Registering lock</span><span class="mk">waiting</span></div>
+              <div class="syncrow"><span class="dot idle"></span><span class="lb">Creating passcode</span><span class="mk">&mdash;</span></div>
+              <div class="syncrow"><span class="dot idle"></span><span class="lb">Granting access</span><span class="mk">&mdash;</span></div>
+            </div>
+            <div class="phint" style="margin-top:auto">This usually takes a few seconds. Keep
+            the app open.</div>
+          </div>
+        </div></div>
+        <p class="scaption"><b>Add lock &mdash; updated</b>The acks you now wait for are real
+        progress. Showing them turns an opaque spinner into a step that can name what failed.</p>
+      </div>
+
+      <div class="scr">
+        <div class="phone"><div class="pscreen">
+          <div class="pbar"><span class="bk">&#8249;</span> Garage passcode</div>
+          <div class="pbody">
+            <div class="phint" style="color:var(--ink-2);font-size:11.5px">This passcode opens
+            <strong>Garage</strong> only. Your other locks keep their own.</div>
+            <div class="pcbig">5&thinsp;6&thinsp;7&thinsp;8</div>
+            <div class="keypad">
+              <div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div>
+              <div>7</div><div>8</div><div>9</div>
+            </div>
+            <div class="pbtn solid">Save passcode</div>
+            <div class="phint">4&ndash;12 digits. Changing this will not affect Front door.</div>
+          </div>
+        </div></div>
+        <p class="scaption"><b>Set passcode &mdash; updated</b>Scoped to one lock and it says
+        so. This screen carries the <code>credentialId</code> into the SDK call.</p>
+      </div>
+
+    </div>
+
+    <div class="adm">
+      <p class="at"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.7v.9"/></svg>The one copy rule worth keeping</p>
+      <p>Wherever a passcode appears, name the lock it opens next to it. The single most
+      likely support call after this change is a user trying their first lock's passcode on
+      their second lock.</p>
+    </div>
+
+    <h2 id="api"><span class="sn">Section 9</span>API reference</h2>
+
+    <p>Paths are relative to the Permission Management base path
+    (<code>/permissionManagementV3</code>) and authenticated with your integrator token, as
+    with the permission APIs you use today.</p>
+
+    <div class="ep">
+      <div class="ep-h"><span class="verb">POST</span><span class="path">/v1/organisations/{orgId}/accessors/{accessorId}/credential/create</span></div>
+      <div class="ep-b">
+        <h4>Create a passcode credential</h4>
+        <p>Issues an additional credential for an accessor that already exists. This is the
+        call that makes a second passcode possible.</p>
+        <div class="tw"><table>
+          <thead><tr><th>Path param</th><th>Type</th><th></th></tr></thead>
+          <tbody>
+            <tr><td><code>orgId</code></td><td>int</td><td>organisation</td></tr>
+            <tr><td><code>accessorId</code></td><td>int</td><td>accessor the credential is created for</td></tr>
+          </tbody>
+        </table></div>
+        <h4>Request</h4>
+        <pre><code>{ "credentialType": "passcode" }</code></pre>
+        <h4>Response 200</h4>
+        <pre><code>{ "type": "success",
+  "message": { "orgId": 1, "accessorId": 501,
+               "credentialType": "passcode", "credentialId": 700000001 } }</code></pre>
+        <p>Use <code>"passcode"</code> as the <code>credentialType</code>. Store the returned
+        <code>credentialId</code>.</p>
+      </div>
+    </div>
+
+    <div class="ep">
+      <div class="ep-h"><span class="verb">PATCH</span><span class="path">/v1/organisations/{orgId}/accessors/{accessorId}/credentials/{credentialId}/permissions</span></div>
+      <div class="ep-b">
+        <h4>Update one credential's doors <span style="font-weight:400;color:var(--ink-3)">&mdash; credential-centric</span></h4>
+        <p>Grant or revoke a single credential across a set of doors. This is the call you make
+        during lock onboarding.</p>
+        <div class="tw"><table>
+          <thead><tr><th>Path param</th><th>Type</th><th></th></tr></thead>
+          <tbody>
+            <tr><td><code>orgId</code></td><td>int</td><td>organisation</td></tr>
+            <tr><td><code>accessorId</code></td><td>int</td><td>accessor owning the credential</td></tr>
+            <tr><td><code>credentialId</code></td><td>int64</td><td>the credential being bound</td></tr>
+          </tbody>
+        </table></div>
+        <h4>Request</h4>
+        <pre><code>{ "accessPointsToAdd": [101, 102], "accessPointsToRemove": [103] }</code></pre>
+        <h4>Response 200</h4>
+        <pre><code>{ "type": "success", "message": "success" }</code></pre>
+        <ul>
+          <li>Either array may be empty; both may be sent in one call.</li>
+          <li><strong>Idempotent.</strong> Adding a door the credential already has is a no-op, as is removing one it does not have.</li>
+          <li>The credential type is resolved server-side from <code>credentialId</code> &mdash; you do not send it.</li>
+          <li><code>400</code> if the access point does not support the credential type, for example a passcode credential on a lock that has no passcode entry.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="ep">
+      <div class="ep-h"><span class="verb">PATCH</span><span class="path">/v1/organisations/{orgId}/accessPoints/{accessPointId}/credential-permissions</span></div>
+      <div class="ep-b">
+        <h4>Update one door's credentials <span style="font-weight:400;color:var(--ink-3)">&mdash; door-centric</span></h4>
+        <p>The same operation seen from the lock: which credentials may open this door. Useful
+        for a "who can open this lock" screen, and for revoking in bulk when a lock is removed.</p>
+        <h4>Request</h4>
+        <pre><code>{
+  "credentialsToAdd":    [ { "accessorId": 501, "credentialId": 9001 } ],
+  "credentialsToRemove": [ { "accessorId": 502, "credentialId": 9002 } ]
+}</code></pre>
+        <p>Both <code>accessorId</code> and <code>credentialId</code> are required in every pair.</p>
+        <h4>Response 200</h4>
+        <pre><code>{ "type": "success", "message": "success" }</code></pre>
+      </div>
+    </div>
+
+    <div class="adm warn">
+      <p class="at"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2.2 14.5 13.6h-13z" stroke-linejoin="round"/><path d="M8 6.6v3.1M8 11.3v.7"/></svg>Permission propagation is asynchronous</p>
+      <p><code>200 OK</code> on the two PATCH calls means Spintly has accepted and recorded the
+      change, not that the lock has it. The permission is fanned out to the passcode service and
+      reconciled in the background. In practice this is fast, but do not treat the HTTP
+      response as proof the lock is updated.</p>
+    </div>
+
+    <h2 id="sdk"><span class="sn">Section 10</span>SDK changes</h2>
+
+    <p>The three passcode functions take a new <code>credentialId</code> parameter, inserted
+    after <code>serialNumber</code>. Both iOS and Android are updated.</p>
+
+    <pre><code>generateMasterPasscode(String serialNumber, <span class="hl">long credentialId</span>, int orgId,
+                       long accessorId, String oldPasscode, String newPasscode,
+                       KeypadManagerCallback callback)
+
+addUserPasscode(String serialNumber, <span class="hl">long credentialId</span>, int orgId,
+                long accessorId, String passcode,
+                KeypadManagerCallback callback)
+
+updatePasscode(String serialNumber, <span class="hl">long credentialId</span>, int orgId,
+               long accessorId, String oldPasscode, String newPasscode,
+               KeypadManagerCallback callback)</code></pre>
+
+    <p>The <code>credentialId</code> you pass <strong>must</strong> be the credential that
+    holds permission on that lock's access point &mdash; granted in
+    <a href="#first">flow A step 4</a> or <a href="#second">flow B step 3</a>. Passing a
+    credential with no permission on the lock will not produce a working passcode.</p>
+
+    <p><strong>What this means for the app:</strong> the lock record must now carry
+    <code>credentialId</code> alongside <code>orgId</code>, <code>accessorId</code> and
+    <code>accessPointId</code>, so the passcode screen can pass all four.</p>
+
+    <h2 id="store"><span class="sn">Section 11</span>What Binary Veda must store</h2>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>Field</th><th>Kept on</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><code>credentialId</code></td><td>the <strong>lock</strong> record</td><td>passed to the SDK; identifies which passcode this lock uses</td></tr>
+          <tr><td>credential list</td><td>the <strong>user</strong> record</td><td>to show a user all of their passcodes</td></tr>
+          <tr><td>passcode value</td><td>the lock record, via <code>finalisePasscode</code></td><td>now stored per credential, not per user</td></tr>
+          <tr><td>sync flags</td><td>org, site, network, access point</td><td>driven by <code>resource_alive</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>The model change in one line: permission and passcode records move from
+    <strong>accessorId &rarr; lockId</strong> to <strong>credentialId &rarr; lockId</strong>.</p>
+
+    <p>Because one accessor now holds several credentials, <code>accessorId</code> alone is no
+    longer a unique key for a passcode. Any table keyed on
+    <code>(accessorId, orgId)</code> for passcode purposes needs <code>credentialId</code>
+    added to the key.</p>
+
+    <h3>Properties already onboarded</h3>
+    <p>Properties onboarded under the one-lock model keep working unchanged. Their owner has
+    one credential permitted on one lock, which is a valid state under the new model &mdash;
+    simply an accessor with one credential. To add a second lock to such a property you need
+    that existing <code>credentialId</code>. If it was not stored at creation time, tell us
+    which organisations are affected and we will supply the values so you can backfill before
+    enabling multi-lock for those users.</p>
+
+    <h2 id="order"><span class="sn">Section 12</span>Sequencing rules</h2>
+
+    <p>These are the ordering constraints that will bite if broken. Each one is a case where
+    the call succeeds only because the previous thing finished.</p>
+
+    <ol class="rules">
+      <li>Organisation, site and network must all be in sync before an accessor or access point is created.</li>
+      <li>The accessor must be ready (<code>accessor_ready</code>) before any permission is granted.</li>
+      <li>The access point must be in sync before a credential is bound to it.</li>
+      <li>A credential must exist before it is bound to a door.</li>
+      <li>A credential must be bound to the door before its passcode is written to the lock over BLE.</li>
+    </ol>
+
+    <h2 id="open"><span class="sn">Section 13</span>Binary Veda's calls</h2>
+
+    <p>Two things in this design are deliberately left to you, because the model supports
+    either answer and the product decision is yours.</p>
+
+    <h3>How many passcodes a user may hold</h3>
+    <p>There is no server-side cap. You may issue as many passcode credentials per accessor as
+    the product calls for, and impose whatever limit makes sense in the app. If you want a
+    limit, enforce it in your backend before calling <code>credential/create</code>.</p>
+
+    <h3>Whether a passcode may open more than one lock</h3>
+    <p>Supported, and it needs no extra API. Because you choose which credential goes on which
+    lock, a single passcode opening two locks is just <strong>one credential bound to two
+    access points</strong>:</p>
+
+    <pre><code>PATCH &hellip;/accessors/{accessorId}/credentials/700000001/permissions
+
+{ "accessPointsToAdd": [4567, 4568], "accessPointsToRemove": [] }</code></pre>
+
+    <p>So the two patterns sit side by side in the same organisation, and you pick per lock:</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>You want</th><th>Do this</th></tr></thead>
+        <tbody>
+          <tr><td>A different passcode on each lock</td><td>create a new credential per lock, bind each to its own access point</td></tr>
+          <tr><td>One passcode across several locks</td><td>reuse the existing credential and add the other access points to it</td></tr>
+          <tr><td>Both, for the same user</td><td>a per-lock credential for each lock, plus one shared credential bound to all of them</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>The third row is worth calling out: a user can hold a passcode unique to the garage
+    <em>and</em> a master passcode that opens everything, because those are simply two
+    credentials with different bindings. The Passcodes screen in
+    <a href="#screens">section 8</a> shows that case.</p>
+
+    <h3>Waiting on us</h3>
+    <p>One item &mdash; the get-credentials route in <a href="#types">section 7</a> is
+    specified and its contract is final, but it is still being added to Credential Management.
+    Build against the shape documented there; we will confirm when it is live on test1.
+    Everything else in this document can be built against now.</p>
+
+    <p class="footer">Spintly &times; Binary Veda &middot; Multi-lock onboarding and multiple
+    passcode support &middot; v1.0. Questions on any of the above &mdash; please raise them
+    with the Spintly integration team before starting implementation.</p>
+  </main>
+
+</div>
+
+<script>
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.sidenav a'));
+  var map = {};
+  links.forEach(function(a){
+    var el = document.getElementById(a.getAttribute('href').slice(1));
+    if (el) map[el.id] = a;
+  });
+  var ids = Object.keys(map);
+  if (!ids.length || !('IntersectionObserver' in window)) return;
+  var seen = {};
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ seen[e.target.id] = e.isIntersecting; });
+    var current = null;
+    for (var i = 0; i < ids.length; i++) { if (seen[ids[i]]) { current = ids[i]; break; } }
+    if (!current) return;
+    links.forEach(function(a){ a.classList.remove('on'); });
+    map[current].classList.add('on');
+  }, { rootMargin: '-60px 0px -70% 0px', threshold: 0 });
+  ids.forEach(function(id){ obs.observe(document.getElementById(id)); });
+})();
+</script>
+
+</body>
+</html>
